@@ -17,10 +17,14 @@
         border-radius: 10px;
       }
 
-      .card {
+      .card, .card-input {
         width: 300px;
         padding: 1em .1em 1em .1em;
         margin: 0 0 1em;
+      }
+
+      .card-input {
+        padding-bottom: 0;
       }
     </style>
   </head>
@@ -31,8 +35,15 @@
 
     <main class="container">
       <div class="columns">
-        <div class="column">
-          <div class="card row">
+        <div id="main-column" class="column">
+          <div class="card-input row">
+            <div class="col-sm">
+              <div class="input-group mb-3">
+                <input id="card-text" type="text" class="form-control" placeholder="Content" aria-label="Content" aria-describedby="basic-addon1" onkeypress="createCard(event)">
+              </div>
+            </div>
+          </div>
+          <!-- <div class="card row">
             <div class="col-sm">
               First text sample
             </div>
@@ -46,13 +57,56 @@
             <div class="col-sm">
               Third text sample
             </div>
-          </div>
+          </div> -->
         </div>
       </div>
     </main>
 
+    <script src="//unpkg.com/@feathersjs/client@^4.3.0/dist/feathers.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+    // Set up socket.io
+    const socket = io('http://localhost:3030');
+    // Initialize a Feathers app
+    const app = feathers();
+
+    // Register socket.io to talk to our server
+    app.configure(feathers.socketio(socket));
+
+    function createCard(event) {
+      if (event.keyCode === 13) {
+        sendCard();
+      }
+    }
+
+    async function sendCard() {
+      const cardInput = document.getElementById('card-text');
+
+      let card = await app.service('v1/cards').create({
+        text: cardInput.value,
+        createdAt: new Date()
+      });
+
+      cardInput.value = '';
+
+      addCard(card);
+    }
+
+    function addCard(card) {
+      document.getElementById('main-column').innerHTML += `<div class="card row"><div class="col-sm">${card.text}</div></div>`;
+    }
+
+    const main = async () => {
+      console.log('main function');
+      const cards = await app.service('v1/cards').find();
+
+      cards.data.forEach(addCard);
+    }
+
+    main();
+    </script>
   </body>
 </html>
