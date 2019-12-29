@@ -35,29 +35,33 @@
 
     <main class="container">
       <div class="columns">
-        <div id="main-column" class="column">
-          <div class="card-input row">
-            <div class="col-sm">
-              <div class="input-group mb-3">
-                <input id="card-text" type="text" class="form-control" placeholder="Content" aria-label="Content" aria-describedby="basic-addon1" onkeypress="createCard(event)">
+        <div class="column">
+          <div class="column-header">
+            <div class="card-input row">
+              <div class="col-sm">
+                <div class="input-group mb-3">
+                  <input id="card-text" type="text" class="form-control" placeholder="Content" aria-label="Content" aria-describedby="basic-addon1" onkeypress="createCard(event)">
+                </div>
               </div>
             </div>
           </div>
-          <!-- <div class="card row">
-            <div class="col-sm">
-              First text sample
+          <div id="main-column">
+            <!-- <div class="card row">
+              <div class="col-sm">
+                First text sample
+              </div>
             </div>
+            <div class="card row">
+              <div class="col-sm">
+                Second text sample
+              </div>
+            </div>
+            <div class="card row">
+              <div class="col-sm">
+                Third text sample
+              </div>
+            </div> -->
           </div>
-          <div class="card row">
-            <div class="col-sm">
-              Second text sample
-            </div>
-          </div>
-          <div class="card row">
-            <div class="col-sm">
-              Third text sample
-            </div>
-          </div> -->
         </div>
       </div>
     </main>
@@ -92,7 +96,17 @@
 
       cardInput.value = '';
 
-      addCard(card);
+      const cards = await app.service('v1/cards').find({
+        query: {
+          $sort: {
+            createdAt: -1
+          }
+        }
+      });
+
+      document.getElementById('main-column').innerHTML = '';
+
+      cards.data.forEach(addCard);
     }
 
     function addCard(card) {
@@ -101,7 +115,13 @@
 
     const main = async () => {
       console.log('main function');
-      const cards = await app.service('v1/cards').find();
+      const cards = await app.service('v1/cards').find({
+        query: {
+          $sort: {
+            createdAt: -1
+          }
+        }
+      });
 
       cards.data.forEach(addCard);
     }
