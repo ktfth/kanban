@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <style>
-      .container {
+      .container-fluid {
         padding-top: 2em;
         padding-bottom: 2em;
       }
@@ -40,15 +40,15 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
           <li class="nav-item">
-            <a class="nav-link" href="#" onclick="addPanel()">Novo painel</a>
+            <a class="nav-link" href="#" onclick="createPanel()">Novo painel</a>
           </li>
         </ul>
       </div>
     </nav>
 
-    <main class="container">
+    <main class="container-fluid">
       <div id="main-columns" class="columns">
-        <div class="column">
+        <!-- <div class="column">
           <div class="column-header">
             <div class="card-input row">
               <div class="col-sm">
@@ -60,7 +60,7 @@
           </div>
           <div id="main-column">
           </div>
-        </div>
+        </div> -->
       </div>
     </main>
 
@@ -78,66 +78,88 @@
       // Register socket.io to talk to our server
       app.configure(feathers.socketio(socket));
 
-      function createCard(event) {
+      function createCard(event, panelId) {
         if (event.keyCode === 13) {
-          sendCard();
+          sendCard(panelId);
         }
       }
 
-      async function sendCard() {
-        const cardInput = document.querySelector('.card-text');
+      async function sendCard(panelId) {
+        const cardInput = document.querySelector('#panel-' + panelId + ' .card-text');
 
         let card = await app.service('v1/cards').create({
           text: cardInput.value,
-          createdAt: new Date()
+          createdAt: new Date(),
+          panel_id: panelId
         });
 
         cardInput.value = '';
 
-        const cards = await app.service('v1/cards').find({
-          query: {
-            $sort: {
-              createdAt: -1
-            }
-          }
-        });
+        // const cards = await app.service('v1/cards').find({
+        //   query: {
+        //     panel_id: panelId,
+        //     $sort: {
+        //       createdAt: -1
+        //     }
+        //   }
+        // });
 
-        document.getElementById('main-column').innerHTML = '';
+        // document.getElementById('main-column').innerHTML = '';
 
-        cards.data.forEach(addCard);
+        // cards.data.forEach(addCard);
+
+        main();
       }
 
       function addCard(card) {
-        document.getElementById('main-column').innerHTML += `<div class="card row"><div class="col-sm">${card.text}</div></div>`;
+        document.querySelector('#panel-' + card.panel_id + ' .main-column').innerHTML += `<div class="card row"><div class="col-sm">${card.text}</div></div>`;
       }
 
-      function addPanel() {
-        document.getElementById('main-columns').innerHTML += `<div class="column">
+      function createPanel() {
+        app.service('v1/boards').create({
+          title: 'Board'
+        }).then(addPanel);
+      }
+
+      function addPanel(panel) {
+        document.getElementById('main-columns').innerHTML += `<div class="column" id="panel-${panel._id}">
           <div class="column-header">
             <div class="card-input row">
               <div class="col-sm">
                 <div class="input-group mb-3">
-                  <input class="card-text" type="text" class="form-control" placeholder="Content" aria-label="Content" aria-describedby="basic-addon1" onkeypress="createCard(event)">
+                  <input class="card-text" type="text" class="form-control" placeholder="Content" aria-label="Content" aria-describedby="basic-addon1" onkeypress="createCard(event, '${panel._id}')">
                 </div>
               </div>
             </div>
           </div>
-          <div id="main-column">
+          <div class="main-column">
           </div>
         </div>`;
       }
 
       const main = async () => {
         console.log('main function');
-        const cards = await app.service('v1/cards').find({
+        const panels = await app.service('v1/boards').find({
           query: {
             $sort: {
-              createdAt: -1
+              createdAt: 1
             }
           }
         });
 
-        cards.data.forEach(addCard);
+        panels.data.forEach(async (panel) => {
+          addPanel(panel);
+          const cards = await app.service('v1/cards').find({
+            query: {
+              panel_id: panel._id,
+              $sort: {
+                createdAt: -1
+              }
+            }
+          });
+
+          cards.data.forEach(addCard);
+        });
       }
 
       main();
